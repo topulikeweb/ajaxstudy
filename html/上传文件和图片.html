@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../js/jquery.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/npm.js"></script>
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-theme.css">
+</head>
+
+<body>
+
+<!-- 选择要上传的文件-->
+<input type="file" id="file1">
+<!-- 点击按钮上传文件 -->
+<button id="btn">上传图片</button>
+<button id="btn2">上传文件</button>
+<!-- 将上传的图片显示出来 -->
+<img src="" alt="" id="img" width="px">
+
+<!--进度条-->
+<div class="progress">
+    <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"
+         style="width: 0%;" id="prograss">
+        0%
+    </div>
+</div>
+
+<script>
+let btn = document.querySelector('#btn');
+
+btn.addEventListener('click', function () {
+  let files = document.querySelector('#file1').files;//这个后面的files就是文件的数组。
+  if (files.length <= 0) {
+    return alert('用户上传图片失败')
+  } else {
+    console.log('成功');
+  }
+  let fd = new FormData();
+  // 将用户所选择的文件添加到formData中'avatar'是一个属性名，上传文件后你的文件的属性名就变成这个，属性值就是你添加的文件
+  fd.append('avatar', files[0]);
+  /*
+  添加上传文件的jq方法
+  * */
+  $('#btn2').on('click',function (){
+    $.ajax({
+      method:'POST',
+      url:'http://www.liulongbin.top:3006/api/upload/avatar',
+      data:fd,
+      processData: false,
+      contentType:false,  //这两个是上传文件的固定格式
+      success:function (res){
+        console.log(res);
+      }
+    })
+  })
+
+  let xhr = new XMLHttpRequest();
+  /*
+  监听文件上传进度
+  * */
+  xhr.upload.onprogress = function (event) {
+    if (event.lengthComputable) {//这个是一个布尔值，只能返回true或者false，表示当前资源是否有上传的长度，是否有进度
+      let wait = event.loaded / event.total;
+      let result = wait * 100 + '%';
+      console.log(result);
+      // 修改进度条
+      $('#prograss').attr('style','width:'+result).html(result+'%')
+    } else {
+      console.log('无法查看到进度');
+    }
+  }
+
+  xhr.open('POST', 'http://www.liulongbin.top:3006/api/upload/avatar');
+  xhr.send(fd);
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      let data = JSON.parse(xhr.responseText);
+
+      if (data.status === 200) {
+        //上传成功
+        let img = document.querySelector('#img');
+        img.src = "http://www.liulongbin.top:3006" + data.url;
+      } else {
+        //上传失败
+        console.log('上传失败' + data.message);
+      }
+    }
+  }
+})
+
+
+</script>
+
+</body>
+
+</html>

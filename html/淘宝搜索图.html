@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible"
+          content="ie=edge"/>
+    <title>淘宝搜索引擎</title>
+    <!-- 导入页面的基本样式 -->
+    <link rel="stylesheet"
+          href="../css/search.css"/>
+    <!-- 导入 jQuery -->
+    <script src="../js/jquery.js"></script>
+    <script src="../js/template-web.js"></script>
+    <!--    导入模板引擎-->
+
+
+</head>
+<body>
+<div class="container">
+    <!-- Logo -->
+    <img src="./images/taobao_logo.png" alt=""
+         class="logo"/>
+
+    <div class="box">
+        <!-- tab 栏 -->
+        <div class="tabs">
+            <div class="tab-active">宝贝</div>
+            <div>店铺</div>
+        </div>
+        <!-- 搜索区域（搜索框和搜索按钮） -->
+        <div class="search-box">
+            <input type="text" class="ipt"
+                   id="inp"
+                   placeholder="请输入要搜索的内容"/>
+            <button class="btnSearch">
+                搜索
+            </button>
+            <!--搜索建议框-->
+            <div class="suggest-list"></div>
+        </div>
+    </div>
+</div>
+<!--设置模板引擎-->
+<script type="text/html" id="tem">
+
+<!--//因为res打印出来的数据是result，所以我们就遍历result-->
+{{each result}}
+<div class="sug-box">{{$value[0]}}</div>
+{{/each}}
+
+</script>
+
+
+<script>
+/*
+防抖，防抖的目的是减轻服务器压力，如果没有防抖那么我每输入一个字就要像服务器请求一次，有了之后，我输入完毕后服务器才会请求一次
+* */
+let time = null;
+let datas = {};
+
+function dedounceSearch (keywords) {
+  time = setTimeout(function () {
+    getdatas(keywords);
+  }, 500);
+}
+
+$('#inp').on('keyup', function () {
+  // 用户在按下的时候就清空计时器
+
+  // 如果输入框没输入就返回空
+  let keywords = $(this).val().trim();
+  if (keywords <= 0) {
+    // 如果搜索框为空就隐藏建议框
+    $('.suggest-list').hide()
+
+  } else {
+    // 只要按下键盘 我就将定时器清除
+    clearTimeout(time);
+    // 判断缓存中有无数据
+    if(datas[keywords]){
+      return renderSuggestList(datas[keywords])
+    }
+    // 停止按键后我在再调用一次
+    dedounceSearch(keywords)
+  }
+})
+
+
+
+
+function getdatas (kw) {
+  $.ajax({
+    url: 'https://suggest.taobao.com/sug?q=' + kw,
+    // 将用户在输入框中输入的keywords发送到接口
+    dataType: 'jsonp',
+    success: function (res) {
+      renderSuggestList(res);
+    }
+  })
+}
+
+console.log('nihao')
+// 设置模板引擎渲染列表
+function renderSuggestList (res) {
+  if (res.result.length <= 0) {
+    $('.suggest-list').empty().hide();
+  } else {
+    let strhtml = template('tem', res);
+    console.log(strhtml)
+    $('.suggest-list').html(strhtml).show();
+    // 获取用户输入的结果，储存起来
+    // 用户输入的键
+    let key = $('#inp').val().trim();
+    // 为属性名为key 添加值
+    datas[key] = res;
+  }
+}
+
+
+
+
+// 当失焦的时候所搜索框隐藏
+$('#inp').on('blur', function () {
+  $('.suggest-list').hide();
+})
+// 聚焦的时候显示
+$('#inp').on('focus', function () {
+  $('.suggest-list').show()
+})
+
+
+</script>
+</body>
+</html>
+
